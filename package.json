@@ -1,0 +1,25 @@
+{
+  "name": "@chainplatform/animated",
+  "version": "0.1.0",
+  "description": "Animation lib from Chain Platform (Bros Chain)",
+  "main": "index.js",
+  "devDependencies": {
+    "react": "*",
+    "react-native": "*"
+  },
+  "author": "Chain Platform <santran686@gmail.com> (https://chainplatform.net/)",
+  "license": "MIT",
+  "keywords": [
+    "react",
+    "react-native",
+    "react-native-web",
+    "react-native-animated",
+    "@chainplatform/animated"
+  ],
+  "homepage": "https://github.com/ChainPlatform/react-native-animated",
+  "bugs": "https://github.com/ChainPlatform/react-native-animated/issues",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/ChainPlatform/react-native-animated.git"
+  }
+}
