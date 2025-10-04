@@ -10,7 +10,9 @@ class DancingText extends PureComponent {
     }
 
     componentDidMount() {
-        this.startAnimationSequence();
+        if (typeof this.props.animated != "undefined" && this.props.animated) {
+            this.startAnimationSequence();
+        }
     }
 
     startAnimationSequence = () => {
