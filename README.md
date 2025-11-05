@@ -2,6 +2,10 @@
 
 Animation lib from Chain Platform (Bros Chain).
 
+**DancingText** — text animation.
+
+**ImageView** — Smooth image loading with shimmer or solid placeholder.  Supports **React Native**, **React Native Web**, and **SVG images**.
+
 <p align="center">
   <a href="https://github.com/ChainPlatform/react-native-animated/blob/HEAD/LICENSE">
     <img src="https://img.shields.io/badge/license-MIT-blue.svg" />
@@ -37,7 +41,7 @@ yarn add @chainplatform/animated
 
 ```jsx
 import { View } from "react-native";
-import { DancingText } from '@chainplatform/animated';
+import { DancingText, ImageView } from '@chainplatform/animated';
 
 export default function Home() {
 
@@ -51,10 +55,61 @@ export default function Home() {
           color: "red"
         }}
       />
+      <ImageView
+          imageType="link"
+          source="https://example.com/logo.png"
+          resizeMode="contain"
+          placeholderType="shimmer"
+          placeholderColor="#f0f0f0"
+          shimmerAngle={20}
+          shimmerWidth={24}
+          shimmerSpeed={1200}
+          shimmerIntensity={0.6}
+          transitionDuration={300}
+          style={{
+            width: 120,
+            height: 60,
+            borderRadius: 8,
+            backgroundColor: '#eee',
+          }}
+          onImageLoaded={() => console.log('Image loaded!')}
+        />
     </View>
   );
 }
 ```
+
+---
+
+## ⚙️ DancingText Props
+
+| Prop | Type | Default | Description |
+|------|------|----------|-------------|
+| **letters** | `string` | — | aniamted text |
+| **textStyle** | `object` | — | Container or image style |
+
+## ⚙️ ImageView Props
+
+| Prop | Type | Default | Description |
+|------|------|----------|-------------|
+| **imageType** | `"link"` \| `"local"` | — | Image source type |
+| **source** | `string` \| `require()` | — | Image URL or local file |
+| **resizeMode** | `string` | `'cover'` | React Native Image resize mode |
+| **placeholderType** | `"solid"` \| `"shimmer"` | `"shimmer"` | Type of loading placeholder |
+| **placeholderColor** | `string` | `#e0e0e0` | Background color for placeholder |
+| **transitionDuration** | `number` | `300` | Fade-in transition duration |
+| **shimmerAngle** | `number` | `15` | Angle of shimmer highlight (in degrees) |
+| **shimmerWidth** | `number` | `20` | Width of shimmer band |
+| **shimmerSpeed** | `number` | `1300` | Animation duration for shimmer loop |
+| **shimmerIntensity** | `number` | `0.55` | Brightness of shimmer center |
+| **onImageLoaded** | `(loaded: boolean) => void` | — | Callback fired when image finishes loading |
+| **style** | `object` | — | Container or image style |
+
+## 💡 Notes
+- Fully compatible with **React Native Web**.  
+- Supports **SVG** via `react-native-svg`.  
+- Automatically detects SVG format from URL.  
+- Animation uses `useNativeDriver` when possible for smoother performance.
 
 ---
 
