@@ -1,5 +1,5 @@
 import { Component } from 'react';
-import { Animated, View, Platform, Easing } from 'react-native';
+import { Animated, View, Platform, Easing, ActivityIndicator } from 'react-native';
 import { SvgUri } from 'react-native-svg';
 
 export default class ImageView extends Component {
@@ -24,12 +24,12 @@ export default class ImageView extends Component {
     }
 
     componentDidMount() {
-        const { imageType, source, placeholderType, showShimmer = true } = this.props;
+        const { imageType, source, placeholderMode = 'shimmer' } = this.props;
         const cacheKey = imageType === 'link' ? source : JSON.stringify(source);
 
         if (ImageView.cache.has(cacheKey)) {
             this.setState({ loaded: true, isCached: true });
-        } else if (placeholderType === 'shimmer' && showShimmer) {
+        } else if (placeholderMode === 'shimmer') {
             this.startPlaceholderAnimation();
         }
     }
@@ -96,15 +96,15 @@ export default class ImageView extends Component {
     renderPlaceholder() {
         const {
             style,
-            placeholderType,
+            placeholderMode = 'shimmer',
             placeholderColor,
             shimmerAngle = 15,
             shimmerWidth = 20,
             shimmerIntensity = 0.55,
-            showShimmer = true,
+            loadingIcon,
         } = this.props;
-        const { measuredWidth, measuredHeight } = this.state;
 
+        const { measuredWidth, measuredHeight } = this.state;
         const width = typeof style?.width === 'number' ? style.width : measuredWidth;
         const height = typeof style?.height === 'number' ? style.height : measuredHeight || 64;
         if (!width) return null;
@@ -116,6 +116,55 @@ export default class ImageView extends Component {
             inputRange: [0, 1],
             outputRange: [-shimmerWidth, width + shimmerWidth],
         });
+
+        if (placeholderMode === 'icon') {
+            return (
+                <View
+                    style={[
+                        {
+                            justifyContent: 'center',
+                            alignItems: 'center',
+                            backgroundColor: baseColor,
+                            position: 'absolute',
+                            top: 0,
+                            left: 0,
+                            right: 0,
+                            bottom: 0,
+                            borderRadius: style?.borderRadius || 0,
+                        },
+                        style,
+                    ]}
+                >
+                    {loadingIcon || (
+                        <ActivityIndicator
+                            size={Platform.OS == 'web' ? "large" : "small"}
+                            color={this.props.spinnerColor || '#999'}
+                        />
+                    )}
+                </View>
+            );
+        }
+
+        if (placeholderMode === 'solid') {
+            return (
+                <Animated.View
+                    pointerEvents="none"
+                    style={[
+                        {
+                            position: 'absolute',
+                            top: 0,
+                            left: 0,
+                            right: 0,
+                            bottom: 0,
+                            backgroundColor: baseColor,
+                            borderRadius: style?.borderRadius || 0,
+                            opacity: this.fadeOutPlaceholder,
+                        },
+                        style,
+                    ]}
+                />
+            );
+        }
 
         return (
             <Animated.View
@@ -135,22 +184,20 @@ export default class ImageView extends Component {
                     style,
                 ]}
             >
-                {showShimmer && placeholderType === 'shimmer' ? (
-                    <Animated.View
-                        style={{
-                            position: 'absolute',
-                            top: -shimmerWidth / 2,
-                            height: height + shimmerWidth,
-                            width: shimmerWidth,
-                            transform: [
-                                { translateX },
-                                { rotate: `${shimmerAngle}deg` },
-                            ],
-                            backgroundColor: highlightColor,
-                            opacity: 0.8,
-                        }}
-                    />
-                ) : null}
+                <Animated.View
+                    style={{
+                        position: 'absolute',
+                        top: -shimmerWidth / 2,
+                        height: height + shimmerWidth,
+                        width: shimmerWidth,
+                        transform: [
+                            { translateX },
+                            { rotate: `${shimmerAngle}deg` },
+                        ],
+                        backgroundColor: highlightColor,
+                        opacity: 0.8,
+                    }}
+                />
             </Animated.View>
         );
     }
@@ -204,7 +251,7 @@ export default class ImageView extends Component {
                         resizeMode={this.props.resizeMode || 'cover'}
                         onLoad={this.onImageLoad}
                         onError={this.onError}
-                        blurRadius={loaded ? 0 : 3}
+                        blurRadius={loaded ? 0 : 5}
                     />
                 )}
             </View>
