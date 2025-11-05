@@ -11,7 +11,7 @@ Animation lib from Chain Platform (Bros Chain).
     <img src="https://img.shields.io/badge/license-MIT-blue.svg" />
   </a>
   <a href="https://www.npmjs.com/package/@chainplatform/animated">
-    <img src="https://img.shields.io/npm/v/@chainplatform/pull-to-refresh?color=brightgreen&label=npm%20package" alt="Current npm package version." />
+    <img src="https://img.shields.io/npm/v/@chainplatform/animated?color=brightgreen&label=npm%20package" alt="Current npm package version." />
   </a>
   <a href="https://www.npmjs.com/package/@chainplatform/animated">
     <img src="https://img.shields.io/npm/dt/@chainplatform/animated.svg"></img>
