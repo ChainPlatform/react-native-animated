@@ -2,31 +2,21 @@ import { Component } from 'react';
 import { Animated, View, Platform, Easing } from 'react-native';
 import { SvgUri } from 'react-native-svg';
 
-/**
- * ImageView
- *
- * Props:
- * - imageType: "link" | "local"
- * - source: string | require()
- * - resizeMode: string
- * - style: object
- * - onImageLoaded: (bool) => void
- * - placeholderType: "solid" | "shimmer" (default: "shimmer")
- * - placeholderColor: string (default: "#e0e0e0")
- * - transitionDuration: number (default: 300)
- * - shimmerAngle: number (default: 15)
- * - shimmerWidth: number (default: 20)
- * - shimmerSpeed: number (default: 1300)
- * - shimmerIntensity: number (default: 0.55)
- */
 export default class ImageView extends Component {
+    static cache = new Set();
+
     constructor(props) {
         super(props);
         this.imageAnimated = new Animated.Value(0);
         this.placeholderAnimated = new Animated.Value(0);
         this.fadeOutPlaceholder = new Animated.Value(1);
-        this.state = { loaded: false, error: false };
-        this.placeholderLoop = null;
+        this.state = {
+            loaded: false,
+            error: false,
+            measuredWidth: 0,
+            measuredHeight: 0,
+            isCached: false,
+        };
     }
 
     get useDriver() {
@@ -34,7 +24,12 @@ export default class ImageView extends Component {
     }
 
     componentDidMount() {
-        if (this.props.placeholderType === 'shimmer') {
+        const { imageType, source, placeholderType, showShimmer = true } = this.props;
+        const cacheKey = imageType === 'link' ? source : JSON.stringify(source);
+
+        if (ImageView.cache.has(cacheKey)) {
+            this.setState({ loaded: true, isCached: true });
+        } else if (placeholderType === 'shimmer' && showShimmer) {
             this.startPlaceholderAnimation();
         }
     }
@@ -65,6 +60,9 @@ export default class ImageView extends Component {
 
     onImageLoad = () => {
         const duration = this.props.transitionDuration || 300;
+        const cacheKey = this.props.imageType === 'link' ? this.props.source : JSON.stringify(this.props.source);
+        ImageView.cache.add(cacheKey);
+
         Animated.timing(this.imageAnimated, {
             toValue: 1,
             duration,
@@ -72,9 +70,7 @@ export default class ImageView extends Component {
             useNativeDriver: this.useDriver,
         }).start(() => {
             this.setState({ loaded: true });
-            if (typeof this.props.onImageLoaded === 'function') {
-                this.props.onImageLoaded(true);
-            }
+            this.props.onImageLoaded?.(true);
         });
     };
 
@@ -92,6 +88,11 @@ export default class ImageView extends Component {
         }
     }
 
+    handleLayout = (e) => {
+        const { width, height } = e.nativeEvent.layout;
+        this.setState({ measuredWidth: width, measuredHeight: height });
+    };
+
     renderPlaceholder() {
         const {
             style,
@@ -99,36 +100,18 @@ export default class ImageView extends Component {
             placeholderColor,
             shimmerAngle = 15,
             shimmerWidth = 20,
-            shimmerIntensity = 0.55
+            shimmerIntensity = 0.55,
+            showShimmer = true,
         } = this.props;
+        const { measuredWidth, measuredHeight } = this.state;
+
+        const width = typeof style?.width === 'number' ? style.width : measuredWidth;
+        const height = typeof style?.height === 'number' ? style.height : measuredHeight || 64;
+        if (!width) return null;
 
         const baseColor = placeholderColor || '#e0e0e0';
         const highlightColor = `rgba(255,255,255,${shimmerIntensity})`;
-        const height = style?.height || 64;
-        const width = typeof style?.width === 'number' ? style.width : 200;
 
-        if (placeholderType === 'solid') {
-            return (
-                <Animated.View
-                    pointerEvents="none"
-                    style={[
-                        {
-                            position: 'absolute',
-                            top: 0,
-                            left: 0,
-                            right: 0,
-                            bottom: 0,
-                            backgroundColor: baseColor,
-                            borderRadius: style?.borderRadius || 0,
-                            opacity: this.fadeOutPlaceholder,
-                        },
-                        style,
-                    ]}
-                />
-            );
-        }
-
-        // Animation chỉ trong phạm vi width ảnh
         const translateX = this.placeholderAnimated.interpolate({
             inputRange: [0, 1],
             outputRange: [-shimmerWidth, width + shimmerWidth],
@@ -152,80 +135,78 @@ export default class ImageView extends Component {
                     style,
                 ]}
             >
-                <Animated.View
-                    style={{
-                        position: 'absolute',
-                        top: -shimmerWidth / 2,
-                        height: height + shimmerWidth,
-                        width: shimmerWidth,
-                        transform: [
-                            { translateX },
-                            { rotate: `${shimmerAngle}deg` },
-                        ],
-                        backgroundColor: highlightColor,
-                        shadowColor: highlightColor,
-                        shadowOffset: { width: 0, height: 0 },
-                        shadowOpacity: 0.5,
-                        shadowRadius: style?.borderRadius || 0,
-                        opacity: 0.8,
-                    }}
-                />
+                {showShimmer && placeholderType === 'shimmer' ? (
+                    <Animated.View
+                        style={{
+                            position: 'absolute',
+                            top: -shimmerWidth / 2,
+                            height: height + shimmerWidth,
+                            width: shimmerWidth,
+                            transform: [
+                                { translateX },
+                                { rotate: `${shimmerAngle}deg` },
+                            ],
+                            backgroundColor: highlightColor,
+                            opacity: 0.8,
+                        }}
+                    />
+                ) : null}
             </Animated.View>
-        );
-    }
-
-    renderSVG(link) {
-        const { style } = this.props;
-        return (
-            <SvgUri
-                width={style?.width || 64}
-                height={style?.height || 64}
-                uri={link}
-                onLoad={this.onImageLoad}
-                onError={this.onError}
-            />
-        );
-    }
-
-    renderIMG(source) {
-        const { resizeMode, style } = this.props;
-        return (
-            <Animated.Image
-                source={source}
-                style={[
-                    {
-                        position: 'absolute',
-                        top: 0,
-                        right: 0,
-                        bottom: 0,
-                        left: 0,
-                        opacity: this.imageAnimated,
-                    },
-                    style,
-                ]}
-                resizeMode={resizeMode || 'cover'}
-                onLoad={this.onImageLoad}
-                onError={this.onError}
-                blurRadius={this.state.loaded ? 0 : 3}
-            />
         );
     }
 
     render() {
         const { imageType, source, style } = this.props;
-        const { loaded, error } = this.state;
+        const { loaded, error, isCached } = this.state;
 
         if (!imageType || !source || error) {
-            return <View style={[style, { backgroundColor: this.props.placeholderColor || '#e0e0e0' }]} />;
+            return (
+                <View
+                    style={[
+                        style,
+                        { backgroundColor: this.props.placeholderColor || '#e0e0e0' },
+                    ]}
+                />
+            );
         }
 
         const isSvg = this.isSVG(source, imageType);
         const imageSource = imageType === 'link' ? { uri: source } : source;
 
         return (
-            <View style={style}>
-                {!loaded && this.renderPlaceholder()}
-                {isSvg ? this.renderSVG(source) : this.renderIMG(imageSource)}
+            <View style={style} onLayout={this.handleLayout}>
+                {!loaded && !isCached && this.renderPlaceholder()}
+
+                {isSvg ? (
+                    <Animated.View style={{ opacity: this.imageAnimated }}>
+                        <SvgUri
+                            width={style?.width || this.state.measuredWidth || 64}
+                            height={style?.height || this.state.measuredHeight || 64}
+                            uri={source}
+                            onLoad={this.onImageLoad}
+                            onError={this.onError}
+                        />
+                    </Animated.View>
+                ) : (
+                    <Animated.Image
+                        source={imageSource}
+                        style={[
+                            {
+                                position: 'absolute',
+                                top: 0,
+                                right: 0,
+                                bottom: 0,
+                                left: 0,
+                                opacity: this.imageAnimated,
+                            },
+                            style,
+                        ]}
+                        resizeMode={this.props.resizeMode || 'cover'}
+                        onLoad={this.onImageLoad}
+                        onError={this.onError}
+                        blurRadius={loaded ? 0 : 3}
+                    />
+                )}
             </View>
         );
     }
